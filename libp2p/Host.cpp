@@ -155,6 +155,9 @@ void Host::stop()
 	// stop worker thread
 	if (isWorking())
 		stopWorking();
+
+	// This destroyes EthereumHost objects.  EthereumHost objects contain a references to Clients' members, so EthereumHost objects need to disappear first.
+	m_capabilities.clear();
 }
 
 void Host::doneWorking()
