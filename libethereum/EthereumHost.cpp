@@ -54,7 +54,7 @@ namespace
 class EthereumPeerObserver: public EthereumPeerObserverFace
 {
 public:
-	EthereumPeerObserver(shared_ptr<BlockChainSync> _sync, TransactionQueue& _tq): m_sync(_sync), m_tq(_tq) {}
+	EthereumPeerObserver(shared_ptr<BlockChainSync> _sync, weak_ptr<TransactionQueue> _tq): m_sync(_sync), m_tq(_tq) {}
 
 	void onPeerStatus(std::shared_ptr<EthereumPeer> _peer) override
 	{
@@ -74,9 +74,12 @@ public:
 
 	void onPeerTransactions(std::shared_ptr<EthereumPeer> _peer, RLP const& _r) override
 	{
+		auto tq = m_tq.lock();
+		if (!tq)
+			return;
 		unsigned itemCount = _r.itemCount();
 		clog(EthereumHostTrace) << "Transactions (" << dec << itemCount << "entries)";
-		m_tq.enqueue(_r, _peer->id());
+		tq->enqueue(_r, _peer->id());
 	}
 
 	void onPeerAborting() override
@@ -171,7 +174,7 @@ public:
 
 private:
 	shared_ptr<BlockChainSync> m_sync;
-	TransactionQueue& m_tq;
+	weak_ptr<TransactionQueue> m_tq;
 };
 
 class EthereumHostData: public EthereumHostDataFace
@@ -379,7 +382,7 @@ private:
 
 }
 
-EthereumHost::EthereumHost(BlockChain const& _ch, OverlayDB const& _db, TransactionQueue& _tq, BlockQueue& _bq, u256 const& _networkId):
+EthereumHost::EthereumHost(BlockChain const& _ch, OverlayDB const& _db, shared_ptr<TransactionQueue> _tq, BlockQueue& _bq, u256 const& _networkId):
 	HostCapability<EthereumPeer>(),
 	Worker		("ethsync"),
 	m_chain		(_ch),
@@ -394,10 +397,10 @@ EthereumHost::EthereumHost(BlockChain const& _ch, OverlayDB const& _db, Transact
 	// m_sync will be initialized in makeEthereumHost()
 	m_peerObserver = make_shared<EthereumPeerObserver>(m_sync, m_tq);
 	m_latestBlockSent = _ch.currentHash();
-	m_tq.onImport([this](ImportResult _ir, h256 const& _h, h512 const& _nodeId) { onTransactionImported(_ir, _h, _nodeId); });
+	_tq->onImport([this](ImportResult _ir, h256 const& _h, h512 const& _nodeId) { onTransactionImported(_ir, _h, _nodeId); });
 }
 
-shared_ptr<EthereumHost> EthereumHost::makeEthereumHost(BlockChain const& _ch, OverlayDB const& _db, TransactionQueue& _tq, BlockQueue& _bq, u256 const& _networkId)
+shared_ptr<EthereumHost> EthereumHost::makeEthereumHost(BlockChain const& _ch, OverlayDB const& _db, shared_ptr<TransactionQueue> _tq, BlockQueue& _bq, u256 const& _networkId)
 {
 	shared_ptr<EthereumHost> ret{new EthereumHost(_ch, _db, _tq, _bq, _networkId)};
 	ret->m_sync.reset(new BlockChainSync(ret));
@@ -411,6 +414,9 @@ EthereumHost::~EthereumHost()
 
 bool EthereumHost::ensureInitialised()
 {
+	auto tq = m_tq.lock();
+	if (!tq)
+		return false;
 	if (!m_latestBlockSent)
 	{
 		// First time - just initialise.
@@ -418,7 +424,7 @@ bool EthereumHost::ensureInitialised()
 		clog(EthereumHostTrace) << "Initialising: latest=" << m_latestBlockSent;
 
 		Guard l(x_transactions);
-		m_transactionsSent = m_tq.knownTransactions();
+		m_transactionsSent = tq->knownTransactions();
 		return true;
 	}
 	return false;
@@ -471,9 +477,12 @@ void EthereumHost::doWork()
 
 void EthereumHost::maintainTransactions()
 {
+	auto tq = m_tq.lock();
+	if (!tq)
+		return;
 	// Send any new transactions.
 	unordered_map<std::shared_ptr<EthereumPeer>, std::vector<size_t>> peerTransactions;
-	auto ts = m_tq.topTransactions(c_maxSendTransactions);
+	auto ts = tq->topTransactions(c_maxSendTransactions);
 	{
 		Guard l(x_transactions);
 		for (size_t i = 0; i < ts.size(); ++i)

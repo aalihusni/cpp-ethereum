@@ -70,7 +70,7 @@ private:
 
 //Functions that working with test json
 void compareBlocks(TestBlock const& _a, TestBlock const& _b);
-mArray writeTransactionsToJson(TransactionQueue const& _txsQueue);
+mArray writeTransactionsToJson(shared_ptr<TransactionQueue const> _txsQueue);
 mObject writeBlockHeaderToJson(BlockHeader const& _bi);
 void overwriteBlockHeaderForTest(mObject const& _blObj, TestBlock& _block, ChainBranch const& _chainBranch);
 void overwriteUncleHeaderForTest(mObject& _uncleHeaderObj, TestBlock& _uncle, vector<TestBlock> const& _uncles, ChainBranch const& _chainBranch);

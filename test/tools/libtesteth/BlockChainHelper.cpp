@@ -46,6 +46,7 @@ TestTransaction::TestTransaction(mObject const& _o):
 TestBlock::TestBlock()
 {
 	m_dirty = false;
+	m_transactionQueue = make_shared<TransactionQueue>();
 }
 
 TestBlock::TestBlock(mObject const& _blockObj):
@@ -69,13 +70,13 @@ TestBlock::TestBlock(std::string const& _blockRLP):
 	RLP root(m_bytes);
 	m_blockHeader = BlockHeader(m_bytes);
 
-	m_transactionQueue.clear();
+	m_transactionQueue->clear();
 	m_testTransactions.clear();
 	for (auto const& tr: root[1])
 	{
 		Transaction tx(tr.data(), CheckTransaction::Everything);
 		TestTransaction testTx(tx);
-		m_transactionQueue.import(tx.rlp());
+		m_transactionQueue->import(tx.rlp());
 		m_testTransactions.push_back(testTx);
 	}
 
@@ -90,11 +91,13 @@ TestBlock::TestBlock(std::string const& _blockRLP):
 
 TestBlock::TestBlock(TestBlock const& _original)
 {
+	m_transactionQueue = make_shared<TransactionQueue>();
 	populateFrom(_original);
 }
 
 TestBlock& TestBlock::operator=(TestBlock const& _original)
 {
+	m_transactionQueue = make_shared<TransactionQueue>();
 	populateFrom(_original);
 	return *this;
 }
@@ -123,7 +126,7 @@ void TestBlock::setState(State const& _state)
 void TestBlock::addTransaction(TestTransaction const& _tr)
 {
 	m_testTransactions.push_back(_tr);
-	if (m_transactionQueue.import(_tr.transaction().rlp()) != ImportResult::Success)
+	if (m_transactionQueue->import(_tr.transaction().rlp()) != ImportResult::Success)
 		cnote << TestOutputHelper::testName() + " Test block failed importing transaction\n";
 	recalcBlockHeaderBytes();
 }
@@ -195,7 +198,7 @@ void TestBlock::mine(TestBlockChain const& _bc)
 
 		premineUpdate(blockInfo);
 
-		size_t transactionsOnImport = m_transactionQueue.topTransactions(100).size();
+		size_t transactionsOnImport = m_transactionQueue->topTransactions(100).size();
 		block.sync(blockchain, m_transactionQueue, gp); //!!! Invalid transactions could be dropped from queue here!!!
 		//if (transactionsOnImport >  m_transactionQueue.topTransactions(1000).size())
 			//BOOST_ERROR(TestOutputHelper::testName() + " Dropped invalid Transactions before mining!");
@@ -205,9 +208,9 @@ void TestBlock::mine(TestBlockChain const& _bc)
 			cnote << TestOutputHelper::testName() + " Dropped invalid Transactions when mining!";
 
 		//renew the TestBlock transactions
-		m_transactionQueue.clear();
+		m_transactionQueue->clear();
 		for (size_t i = 0; i < block.pending().size(); i++)
-			m_transactionQueue.import(block.pending()[i]);
+			m_transactionQueue->import(block.pending()[i]);
 	}
 	catch (Exception const& _e)
 	{
@@ -382,7 +385,7 @@ void TestBlock::verify(TestBlockChain const& _bc) const
 void TestBlock::recalcBlockHeaderBytes()
 {
 	Transactions txList;
-	for (auto const& txi: m_transactionQueue.topTransactions(std::numeric_limits<unsigned>::max()))
+	for (auto const& txi: m_transactionQueue->topTransactions(std::numeric_limits<unsigned>::max()))
 		txList.push_back(txi);
 	RLPStream txStream;
 	txStream.appendList(txList.size());
@@ -441,10 +444,10 @@ void TestBlock::populateFrom(TestBlock const& _original)
 			cnote << _ex.what() << "copying block with null state";
 	}
 	m_testTransactions = _original.testTransactions();
-	m_transactionQueue.clear();
-	TransactionQueue const& trQueue = _original.transactionQueue();
-	for (auto const& txi: trQueue.topTransactions(std::numeric_limits<unsigned>::max()))
-		m_transactionQueue.import(txi.rlp());
+	m_transactionQueue->clear();
+	shared_ptr<TransactionQueue const> trQueue = _original.transactionQueue();
+	for (auto const& txi: trQueue->topTransactions(std::numeric_limits<unsigned>::max()))
+		m_transactionQueue->import(txi.rlp());
 
 	m_uncles = _original.uncles();
 	m_blockHeader = _original.blockHeader();

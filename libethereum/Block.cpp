@@ -310,8 +310,9 @@ bool Block::sync(BlockChain const& _bc, h256 const& _block, BlockHeader const& _
 	return ret;
 }
 
-pair<TransactionReceipts, bool> Block::sync(BlockChain const& _bc, TransactionQueue& _tq, GasPricer const& _gp, unsigned msTimeout)
+pair<TransactionReceipts, bool> Block::sync(BlockChain const& _bc, shared_ptr<TransactionQueue> _tq, GasPricer const& _gp, unsigned msTimeout)
 {
+	assert(_tq);
 	if (isSealed())
 		BOOST_THROW_EXCEPTION(InvalidOperationOnSealedBlock());
 
@@ -320,7 +321,7 @@ pair<TransactionReceipts, bool> Block::sync(BlockChain const& _bc, TransactionQu
 	// TRANSACTIONS
 	pair<TransactionReceipts, bool> ret;
 
-	auto ts = _tq.topTransactions(c_maxSyncTransactions, m_transactionSet);
+	auto ts = _tq->topTransactions(c_maxSyncTransactions, m_transactionSet);
 	ret.second = (ts.size() == c_maxSyncTransactions);	// say there's more to the caller if we hit the limit
 
 	assert(_bc.currentHash() == m_currentBlock.parentHash());
@@ -345,7 +346,7 @@ pair<TransactionReceipts, bool> Block::sync(BlockChain const& _bc, TransactionQu
 					else if (t.gasPrice() < _gp.ask(*this) * 9 / 10)
 					{
 						clog(StateTrace) << t.sha3() << "Dropping El Cheapo transaction (<90% of ask price)";
-						_tq.drop(t.sha3());
+						_tq->drop(t.sha3());
 					}
 				}
 				catch (InvalidNonce const& in)
@@ -357,16 +358,16 @@ pair<TransactionReceipts, bool> Block::sync(BlockChain const& _bc, TransactionQu
 					{
 						// too old
 						clog(StateTrace) << t.sha3() << "Dropping old transaction (nonce too low)";
-						_tq.drop(t.sha3());
+						_tq->drop(t.sha3());
 					}
-					else if (got > req + _tq.waiting(t.sender()))
+					else if (got > req + _tq->waiting(t.sender()))
 					{
 						// too new
 						clog(StateTrace) << t.sha3() << "Dropping new transaction (too many nonces ahead)";
-						_tq.drop(t.sha3());
+						_tq->drop(t.sha3());
 					}
 					else
-						_tq.setFuture(t.sha3());
+						_tq->setFuture(t.sha3());
 				}
 				catch (BlockGasLimitReached const& e)
 				{
@@ -375,7 +376,7 @@ pair<TransactionReceipts, bool> Block::sync(BlockChain const& _bc, TransactionQu
 					{
 						clog(StateTrace) << t.sha3() << "Dropping over-gassy transaction (gas > block's gas limit)";
 						clog(StateTrace) << "got: " << got << " required: " << m_currentBlock.gasLimit();
-						_tq.drop(t.sha3());
+						_tq->drop(t.sha3());
 					}
 					else
 					{
@@ -390,12 +391,12 @@ pair<TransactionReceipts, bool> Block::sync(BlockChain const& _bc, TransactionQu
 				{
 					// Something else went wrong - drop it.
 					clog(StateTrace) << t.sha3() << "Dropping invalid transaction:" << diagnostic_information(_e);
-					_tq.drop(t.sha3());
+					_tq->drop(t.sha3());
 				}
 				catch (std::exception const&)
 				{
 					// Something else went wrong - drop it.
-					_tq.drop(t.sha3());
+					_tq->drop(t.sha3());
 					cwarn << t.sha3() << "Transaction caused low-level exception :(";
 				}
 			}

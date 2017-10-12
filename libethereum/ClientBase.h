@@ -76,7 +76,7 @@ struct WorkChannel: public LogChannel { static const char* name(); static const 
 class ClientBase: public Interface
 {
 public:
-	ClientBase(TransactionQueue::Limits const& _l = TransactionQueue::Limits{1024, 1024}): m_tq(_l) {}
+	ClientBase(TransactionQueue::Limits const& _l = TransactionQueue::Limits{1024, 1024}): m_tq(std::make_shared<TransactionQueue>(_l)) {}
 	virtual ~ClientBase() {}
 
 	/// Submits the given transaction.
@@ -145,7 +145,7 @@ public:
 
 	virtual EVMSchedule evmSchedule() const override { return sealEngine()->evmSchedule(pendingInfo().number()); }
 
-	virtual ImportResult injectTransaction(bytes const& _rlp, IfDropped _id = IfDropped::Ignore) override { prepareForTransaction(); return m_tq.import(_rlp, _id); }
+	virtual ImportResult injectTransaction(bytes const& _rlp, IfDropped _id = IfDropped::Ignore) override { prepareForTransaction(); return m_tq->import(_rlp, _id); }
 	virtual ImportResult injectBlock(bytes const& _block) override;
 
 	using Interface::addresses;
@@ -180,7 +180,7 @@ protected:
 	virtual void prepareForTransaction() = 0;
 	/// }
 
-	TransactionQueue m_tq;							///< Maintains a list of incoming transactions not yet in a block on the blockchain.
+	std::shared_ptr<TransactionQueue> m_tq;	///< Maintains a list of incoming transactions not yet in a block on the blockchain. This is never null.  Only passed on as a weak_ptr.
 
 	// filters
 	mutable Mutex x_filtersWatches;							///< Our lock.

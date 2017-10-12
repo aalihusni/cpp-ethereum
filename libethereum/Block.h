@@ -219,7 +219,7 @@ public:
 
 	/// Sync our transactions, killing those from the queue that we have and assimilating those that we don't.
 	/// @returns a list of receipts one for each transaction placed from the queue into the state and bool, true iff there are more transactions to be processed.
-	std::pair<TransactionReceipts, bool> sync(BlockChain const& _bc, TransactionQueue& _tq, GasPricer const& _gp, unsigned _msTimeout = 100);
+	std::pair<TransactionReceipts, bool> sync(BlockChain const& _bc, std::shared_ptr<TransactionQueue> _tq, GasPricer const& _gp, unsigned _msTimeout = 100);
 
 	/// Sync our state with the block chain.
 	/// This basically involves wiping ourselves if we've been superceded and rebuilding from the transaction queue.

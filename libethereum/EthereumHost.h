@@ -63,9 +63,9 @@ class EthereumHost: public p2p::HostCapability<EthereumPeer>, Worker
 private:
 	/// Start server, but don't listen.
 	/// Since the constructor leaves m_sync uninitialized, it is still private.  Use makeEthereumHost() instead.
-	EthereumHost(BlockChain const& _ch, OverlayDB const& _db, TransactionQueue& _tq, BlockQueue& _bq, u256 const& _networkId);
+	EthereumHost(BlockChain const& _ch, OverlayDB const& _db, std::shared_ptr<TransactionQueue> _tq, BlockQueue& _bq, u256 const& _networkId);
 public:
-	static std::shared_ptr<EthereumHost> makeEthereumHost(BlockChain const& _ch, OverlayDB const& _db, TransactionQueue &_tq, BlockQueue& _bq, u256 const& _networkId);
+	static std::shared_ptr<EthereumHost> makeEthereumHost(BlockChain const& _ch, OverlayDB const& _db, std::shared_ptr<TransactionQueue> _tq, BlockQueue& _bq, u256 const& _networkId);
 
 	/// Will block on network process events.
 	virtual ~EthereumHost();
@@ -122,7 +122,7 @@ private:
 
 	BlockChain const& m_chain;
 	OverlayDB const& m_db;					///< References to DB, needed for some of the Ethereum Protocol responses.
-	TransactionQueue& m_tq;					///< Maintains a list of incoming transactions not yet in a block on the blockchain.
+	std::weak_ptr<TransactionQueue> m_tq;					///< Maintains a list of incoming transactions not yet in a block on the blockchain.
 	BlockQueue& m_bq;						///< Maintains a list of incoming blocks not yet on the blockchain (to be imported).
 
 	u256 m_networkId;

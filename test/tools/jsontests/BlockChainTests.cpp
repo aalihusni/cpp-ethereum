@@ -339,7 +339,7 @@ json_spirit::mObject fillBCTest(json_spirit::mObject const& _input)
 		cnote << "Mining block" <<  importBlockNumber << "for chain" << chainname << "at test " << testName;
 		block.mine(blockchain);
 		cnote << "Block mined with...";
-		cnote << "Transactions: " << block.transactionQueue().topTransactions(100).size();
+		cnote << "Transactions: " << block.transactionQueue()->topTransactions(100).size();
 		cnote << "Uncles: " << block.uncles().size();
 
 		TestBlock alterBlock(block);
@@ -817,10 +817,12 @@ void compareBlocks(TestBlock const& _a, TestBlock const& _b)
 		cnote << "uncle list mismatch\n" << RLP(_a.bytes())[2].data() << "\n" << RLP(_b.bytes())[2].data();
 }
 
-mArray writeTransactionsToJson(TransactionQueue const& _txsQueue)
+mArray writeTransactionsToJson(shared_ptr<TransactionQueue const> _txsQueue)
 {
-	Transactions const& txs = _txsQueue.topTransactions(std::numeric_limits<unsigned>::max());
 	mArray txArray;
+	if (!_txsQueue)
+		return txArray;
+	Transactions const& txs = _txsQueue->topTransactions(std::numeric_limits<unsigned>::max());
 	for (auto const& txi: txs)
 	{
 		mObject txObject = fillJsonWithTransaction(txi);

@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(bGasPricer)
 		block.sync(blockchain);
 		TestBlock testBlockT = testBlock;
 		block.sync(blockchain, testBlockT.transactionQueue(), gp);
-		BOOST_REQUIRE(testBlockT.transactionQueue().topTransactions(4).size() == 2);
+		BOOST_REQUIRE(testBlockT.transactionQueue()->topTransactions(4).size() == 2);
 	}
 
 	{
@@ -173,7 +173,7 @@ BOOST_AUTO_TEST_CASE(bGasPricer)
 		ZeroGasPricer gp;
 		Block block = blockchain.genesisBlock(genesisDB);
 		block.sync(blockchain, testBlockT.transactionQueue(), gp);
-		BOOST_REQUIRE(testBlockT.transactionQueue().topTransactions(4).size() == 2);
+		BOOST_REQUIRE(testBlockT.transactionQueue()->topTransactions(4).size() == 2);
 	}
 
 	{
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(bGasPricer)
 		Block block = blockchain.genesisBlock(genesisDB);
 		block.sync(blockchain);
 		block.sync(blockchain, testBlockT.transactionQueue(), gp);
-		BOOST_REQUIRE(testBlockT.transactionQueue().topTransactions(4).size() == 2);
+		BOOST_REQUIRE(testBlockT.transactionQueue()->topTransactions(4).size() == 2);
 	}
 
 	{
@@ -199,7 +199,7 @@ BOOST_AUTO_TEST_CASE(bGasPricer)
 		Block block = blockchain.genesisBlock(genesisDB);
 		block.sync(blockchain);
 		block.sync(blockchain, testBlockT.transactionQueue(), gp);
-		BOOST_REQUIRE(testBlockT.transactionQueue().topTransactions(4).size() == 3);
+		BOOST_REQUIRE(testBlockT.transactionQueue()->topTransactions(4).size() == 3);
 	}
 
 	{
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(bGasPricer)
 		Block block = blockchain.genesisBlock(genesisDB);
 		block.sync(blockchain);
 		block.sync(blockchain, testBlockT.transactionQueue(), gp);
-		BOOST_REQUIRE(testBlockT.transactionQueue().topTransactions(4).size() == 2);
+		BOOST_REQUIRE(testBlockT.transactionQueue()->topTransactions(4).size() == 2);
 	}
 
 	{
@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE(bGasPricer)
 		Block block = blockchain.genesisBlock(genesisDB);
 		block.sync(blockchain);
 		block.sync(blockchain, testBlockT.transactionQueue(), gp);
-		BOOST_REQUIRE(testBlockT.transactionQueue().topTransactions(4).size() == 2);
+		BOOST_REQUIRE(testBlockT.transactionQueue()->topTransactions(4).size() == 2);
 	}
 }
 

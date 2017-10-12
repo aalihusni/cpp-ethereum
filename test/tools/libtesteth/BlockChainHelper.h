@@ -83,8 +83,8 @@ public:
 	AccountMap const& accountMap() const { return m_accountMap; }
 	State const& state() const { if (m_state.get() == 0) BOOST_THROW_EXCEPTION(BlockStateUndefined() << errinfo_comment("Block State is Nulled")); return *m_state.get(); }
 	BlockHeader const& blockHeader() const { return m_blockHeader;}
-	TransactionQueue const& transactionQueue() const { return m_transactionQueue; }
-	TransactionQueue & transactionQueue() { return m_transactionQueue; }
+	shared_ptr<TransactionQueue const> transactionQueue() const { return m_transactionQueue; }
+	shared_ptr<TransactionQueue> transactionQueue() { return m_transactionQueue; }
 	vector<TestTransaction> const& testTransactions() const { return m_testTransactions; }
 	vector<TestBlock> const& uncles() const { return m_uncles; }
 	Address const& beneficiary() const { return m_blockHeader.author(); }
@@ -102,7 +102,7 @@ private:
 	BlockHeader m_blockHeader;
 	vector<TestBlock> m_uncles;
 	std::unique_ptr<State> m_state;
-	TransactionQueue m_transactionQueue;
+	shared_ptr<TransactionQueue> m_transactionQueue;
 	BlockQueue m_uncleQueue;
 	dev::bytes m_bytes;
 	std::unique_ptr<TransientDirectory> m_tempDirState;

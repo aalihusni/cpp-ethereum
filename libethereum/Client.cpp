@@ -99,8 +99,8 @@ void Client::init(p2p::Host* _extNet, fs::path const& _dbPath, WithExisting _for
 	m_bq.setChain(bc());
 
 	m_lastGetWork = std::chrono::system_clock::now() - chrono::seconds(30);
-	m_tqReady = m_tq.onReady([=](){ this->onTransactionQueueReady(); });	// TODO: should read m_tq->onReady(thisThread, syncTransactionQueue);
-	m_tqReplaced = m_tq.onReplaced([=](h256 const&){ m_needStateReset = true; });
+	m_tqReady = m_tq->onReady([=](){ this->onTransactionQueueReady(); });	// TODO: should read m_tq->onReady(thisThread, syncTransactionQueue);
+	m_tqReplaced = m_tq->onReplaced([=](h256 const&){ m_needStateReset = true; });
 	m_bqReady = m_bq.onReady([=](){ this->onBlockQueueReady(); });			// TODO: should read m_bq->onReady(thisThread, syncBlockQueue);
 	m_bq.setOnBad([=](Exception& ex){ this->onBadBlock(ex); });
 	bc().setOnBad([=](Exception& ex){ this->onBadBlock(ex); });
@@ -244,7 +244,7 @@ void Client::reopenChain(ChainParams const& _p, WithExisting _we)
 		stopSealing();
 	stopWorking();
 
-	m_tq.clear();
+	m_tq->clear();
 	m_bq.clear();
 	sealEngine()->cancelGeneration();
 
@@ -292,7 +292,7 @@ void Client::clearPending()
 	{
 		if (!m_postSeal.pending().size())
 			return;
-		m_tq.clear();
+		m_tq->clear();
 		DEV_READ_GUARDED(x_preSeal)
 			m_postSeal = m_preSeal;
 	}
@@ -417,7 +417,7 @@ void Client::syncTransactionQueue()
 
 	if (newPendingReceipts.empty())
 	{
-		auto s = m_tq.status();
+		auto s = m_tq->status();
 		ctrace << "No transactions to process. " << m_working.pending().size() << " pending, " << s.current << " queued, " << s.future << " future, " << s.unverified << " unverified";
 		return;
 	}
@@ -453,7 +453,7 @@ void Client::onDeadBlocks(h256s const& _blocks, h256Hash& io_changed)
 		{
 			clog(ClientTrace) << "Resubmitting dead-block transaction " << Transaction(t, CheckTransaction::None);
 			ctrace << "Resubmitting dead-block transaction " << Transaction(t, CheckTransaction::None);
-			m_tq.import(t, IfDropped::Retry);
+			m_tq->import(t, IfDropped::Retry);
 		}
 	}
 
@@ -502,7 +502,7 @@ void Client::resyncStateFromChain()
 				{
 					clog(ClientTrace) << "Resubmitting post-seal transaction " << t;
 //						ctrace << "Resubmitting post-seal transaction " << t;
-					auto ir = m_tq.import(t, IfDropped::Retry);
+					auto ir = m_tq->import(t, IfDropped::Retry);
 					if (ir != ImportResult::Success)
 						onTransactionQueueReady();
 				}
@@ -540,7 +540,7 @@ void Client::onChainChanged(ImportRoute const& _ir)
 	for (auto const& t: _ir.goodTranactions)
 	{
 		clog(ClientTrace) << "Safely dropping transaction " << t.sha3();
-		m_tq.dropGood(t);
+		m_tq->dropGood(t);
 	}
 	onNewBlocks(_ir.liveBlocks, changeds);
 	if (!isMajorSyncing())

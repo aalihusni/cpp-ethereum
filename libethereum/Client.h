@@ -125,8 +125,8 @@ public:
 	/// Get the block queue.
 	OverlayDB const& stateDB() const { return m_stateDB; }
 	/// Get some information on the transaction queue.
-	TransactionQueue::Status transactionQueueStatus() const { return m_tq.status(); }
-	TransactionQueue::Limits transactionQueueLimits() const { return m_tq.limits(); }
+	TransactionQueue::Status transactionQueueStatus() const { return m_tq->status(); }
+	TransactionQueue::Limits transactionQueueLimits() const { return m_tq->limits(); }
 
 	/// Freeze worker thread and sync some of the block queue.
 	std::tuple<ImportRoute, bool, unsigned> syncQueue(unsigned _max = 1);
