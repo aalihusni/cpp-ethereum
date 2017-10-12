@@ -49,7 +49,7 @@ class EthereumPeer;
 class BlockChainSync: public HasInvariants
 {
 public:
-	BlockChainSync(EthereumHost& _host);
+	BlockChainSync(std::shared_ptr<EthereumHost> _host);
 	~BlockChainSync();
 	void abortSync(); ///< Abort all sync activity
 
@@ -95,15 +95,14 @@ private:
 	/// Enter waiting state
 	void pauseSync();
 
-	EthereumHost& host() { return m_host; }
-	EthereumHost const& host() const { return m_host; }
+	std::shared_ptr<EthereumHost> host() const { return m_host.lock(); }
 
 	void resetSync();
 	void syncPeer(std::shared_ptr<EthereumPeer> _peer, bool _force);
 	void requestBlocks(std::shared_ptr<EthereumPeer> _peer);
 	void clearPeerDownload(std::shared_ptr<EthereumPeer> _peer);
 	void clearPeerDownload();
-	void collectBlocks();
+	void collectBlocks(std::shared_ptr<EthereumHost> _host);
 	bool requestDaoForkBlockHeader(std::shared_ptr<EthereumPeer> _peer);
 	bool verifyDaoChallengeResponse(RLP const& _r);
 
@@ -139,7 +138,7 @@ private:
 		}
 	};
 
-	EthereumHost& m_host;
+	std::weak_ptr<EthereumHost> m_host;
 	Handler<> m_bqRoomAvailable;				///< Triggered once block queue has space for more blocks
 	mutable RecursiveMutex x_sync;
 	std::set<std::weak_ptr<EthereumPeer>, std::owner_less<std::weak_ptr<EthereumPeer>>> m_daoChallengedPeers; ///> Peers to which we've sent DAO challenge request

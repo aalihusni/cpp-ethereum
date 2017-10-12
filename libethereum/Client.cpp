@@ -114,7 +114,7 @@ void Client::init(p2p::Host* _extNet, fs::path const& _dbPath, WithExisting _for
 
 	m_gp->update(bc());
 
-	auto host = _extNet->registerCapability(make_shared<EthereumHost>(bc(), m_stateDB, m_tq, m_bq, _networkId));
+	auto host = _extNet->registerCapability(EthereumHost::makeEthereumHost(bc(), m_stateDB, m_tq, m_bq, _networkId));
 	m_host = host;
 
 	_extNet->addCapability(host, EthereumHost::staticName(), EthereumHost::c_oldProtocolVersion); //TODO: remove this once v61+ protocol is common

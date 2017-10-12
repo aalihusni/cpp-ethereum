@@ -60,9 +60,12 @@ struct EthereumHostTrace: public LogChannel { static const char* name(); static 
  */
 class EthereumHost: public p2p::HostCapability<EthereumPeer>, Worker
 {
-public:
+private:
 	/// Start server, but don't listen.
-	EthereumHost(BlockChain const& _ch, OverlayDB const& _db, TransactionQueue& _tq, BlockQueue& _bq, u256 _networkId);
+	/// Since the constructor leaves m_sync uninitialized, it is still private.  Use makeEthereumHost() instead.
+	EthereumHost(BlockChain const& _ch, OverlayDB const& _db, TransactionQueue& _tq, BlockQueue& _bq, u256 const& _networkId);
+public:
+	static std::shared_ptr<EthereumHost> makeEthereumHost(BlockChain const& _ch, OverlayDB const& _db, TransactionQueue &_tq, BlockQueue& _bq, u256 const& _networkId);
 
 	/// Will block on network process events.
 	virtual ~EthereumHost();
@@ -82,7 +85,7 @@ public:
 	void noteNewBlocks() { m_newBlocks = true; }
 	void onBlockImported(BlockHeader const& _info) { m_sync->onBlockImported(_info); }
 
-	BlockChain const& chain() const { return m_chain; }
+	BlockChain const& chain() const { return m_chain; } // looked up
 	OverlayDB const& db() const { return m_db; }
 	BlockQueue& bq() { return m_bq; }
 	BlockQueue const& bq() const { return m_bq; }
