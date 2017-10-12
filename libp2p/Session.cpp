@@ -85,7 +85,7 @@ void Session::addRating(int _r)
 	if (m_peer)
 	{
 		m_peer->m_rating += _r;
-		m_peer->m_score += _r;
+		m_peer->m_score += _r; // write
 		if (_r >= 0)
 			m_peer->noteSessionGood();
 	}
@@ -275,8 +275,22 @@ void Session::drop(DisconnectReason _reason)
 	m_peer->m_lastDisconnect = _reason;
 	if (_reason == BadProtocol)
 	{
-		m_peer->m_rating /= 2;
-		m_peer->m_score /= 2;
+		int old_rate = 0;
+		int new_rate = 0;
+		do
+		{
+			old_rate = m_peer->m_rating;
+			new_rate = old_rate / 2;
+		}
+		while (!m_peer->m_rating.atomic::compare_exchange_weak(old_rate, new_rate));
+		int old_score = 0;
+		int new_score = 0;
+		do
+		{
+			old_score = m_peer->m_score;
+			new_score = old_score / 2;
+		}
+		while (!m_peer->m_score.atomic::compare_exchange_weak(old_score, new_score));
 	}
 	m_dropped = true;
 }
